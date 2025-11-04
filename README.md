@@ -225,7 +225,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 //             // Here we add an example query param for background removal — adjust for your ImageKit config.
 //             // Many SDKs accept 'useUniqueFileName', 'isPrivateFile' etc. See your SDK docs.
 //           });
-          
+
 //           // set image url in resume data (ensure personal_info exists)
 //           resumeDataCopy.personal_info = resumeDataCopy.personal_info || {};
 //           resumeDataCopy.personal_info.image = uploadResponse.url;
@@ -267,4 +267,6 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 //     return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
 //   }
 // }
+
+
 ```

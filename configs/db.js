@@ -1,13 +1,5 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error(
-    "❌ Please define the MONGODB_URI environment variable inside .env.local"
-  );
-}
-
 let cached = global.mongoose;
 
 if (!cached) {
@@ -15,16 +7,23 @@ if (!cached) {
 }
 
 export async function connectDB() {
+  const MONGODB_URI = process.env.MONGODB_URI;
+
+  // Avoid crashing during build when env isn't present; throw only when actually connecting at runtime.
+  if (!MONGODB_URI) {
+    throw new Error("MONGODB_URI is not defined");
+  }
+
   if (cached.conn) return cached.conn;
-  
+
   if (!cached.promise) {
     const options = {
-      dbName: "aiResumebuilder",
+      dbName: process.env.MONGODB_DBNAME || "aiResumebuilder",
       bufferCommands: false,
-      autoIndex: process.env.NODE_ENV !== "production", 
-      maxPoolSize: 10, 
+      autoIndex: process.env.NODE_ENV !== "production",
+      maxPoolSize: 10,
       serverSelectionTimeoutMS: 10000,
-      socketTimeoutMS: 45000, 
+      socketTimeoutMS: 45000,
       family: 4,
     };
 

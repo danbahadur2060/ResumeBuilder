@@ -88,11 +88,12 @@ export default function Login() {
 
       if (error) {
         setMessage({ type: "error", text: error.message || "Google sign-in failed. Please try again." });
-      } else if (data) {
-        setMessage({ type: "success", text: "Login successful! Redirecting..." });
-        setTimeout(() => {
-          router.push("/dashboard");
-        }, 1000);
+      } else if (data?.url) {
+        // Better Auth returns the provider URL when disableRedirect is true
+        window.location.href = data.url;
+      } else {
+        // Fallback
+        router.push("/dashboard");
       }
     } catch (err) {
       console.error(err);
