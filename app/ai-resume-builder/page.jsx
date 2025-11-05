@@ -39,12 +39,12 @@ export default function Page() {
     try {
       setLoading(true);
       if (file) {
-        const isText = file.type === "text/plain";
-        const text = isText ? await file.text() : `Uploaded file: ${file.name}`;
         const titleGuess = file.name?.replace(/\.[^.]+$/, "") || "Imported Resume";
-        const { data } = await axios.post("/api/ai/upload-resume", {
-          resumeText: text,
-          title: titleGuess,
+        const form = new FormData();
+        form.append("file", file);
+        form.append("title", titleGuess);
+        const { data } = await axios.post("/api/ai/upload-resume", form, {
+          headers: { "Content-Type": "multipart/form-data" },
         });
         if (data?.resumeId) router.push(`/builder/${data.resumeId}`);
         return;
