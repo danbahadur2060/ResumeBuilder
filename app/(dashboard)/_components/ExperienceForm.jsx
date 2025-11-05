@@ -1,10 +1,7 @@
 import { Briefcase, Plus, Sparkles, Trash2 } from 'lucide-react'
-import React, { useState } from 'react'
-import axios from 'axios'
+import React from 'react'
 
 const ExperienceForm = ({data,onChange}) => {
-  const [enhancingIndex, setEnhancingIndex] = useState(null)
-
   const addExperience =()=>{
     const newExperience = {
       company:"",
@@ -25,21 +22,6 @@ const ExperienceForm = ({data,onChange}) => {
     const updated = [...data]
     updated[index]= {...updated[index],[field]:value};
     onChange(updated)
-  }
-  
-  const enhanceJobDesc = async (index) => {
-    const curr = data?.[index]
-    if (!curr?.description) return
-    try {
-      setEnhancingIndex(index)
-      const res = await axios.post('/api/ai/enhance-job-desc', { userContext: curr.description })
-      const improved = res?.data?.enhanceContent || ''
-      if (improved) updateExperience(index, 'description', improved)
-    } catch (e) {
-      console.error('enhance-job-desc failed', e)
-    } finally {
-      setEnhancingIndex(null)
-    }
   }
   
   return (
@@ -92,23 +74,13 @@ const ExperienceForm = ({data,onChange}) => {
                     <div className='space-y-2'>
                     <div className='flex items-center justify-between'>
                       <label className='text-sm font-medium text-gray-700'>Job Description</label>
-                      <button onClick={()=>enhanceJobDesc(index)} disabled={!experience.description || enhancingIndex===index} className='flex items-center gap-1 px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-colors disabled:opacity-50'>
-                        <Sparkles className='w-3 h-3'/>{enhancingIndex===index? 'Enhancing...' : 'Enhance with AI'}
+                      <button className='flex items-center gap-1 px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition-colors disabled:opacity-50'>
+                        <Sparkles className='w-3 h-3'/>Enhance with AI
                       </button>
 
                     </div>
 
-                    {enhancingIndex===index && (
-                      <p className='text-xs text-purple-600 mt-1 animate-pulse'>Enhancing description…</p>
-                    )}
-                    <textarea
-                      value={experience.description || ''}
-                      onChange={(e)=> updateExperience(index,"description",e.target.value)}
-                      className='w-full text-sm px-3 py-2 rounded-lg resize-none disabled:bg-gray-100 disabled:cursor-not-allowed'
-                      placeholder='Describe your key responsibilities and achievements...'
-                      disabled={enhancingIndex===index}
-                      aria-busy={enhancingIndex===index}
-                    />
+                    <textarea value={experience.description || ''} onChange={(e)=> updateExperience(index,"description",e.target.value)} className='w-full text-sm px-3 py-2 rounded-lg resize-none' placeholder='Describe your key responsibiities and achievements...'/>
                     </div>
                   </div>
                 ))

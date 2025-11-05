@@ -4,12 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { authClient } from "../lib/auth-client";
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
-  const [isAuthed, setIsAuthed] = useState(false);
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
@@ -17,15 +15,6 @@ export default function Navbar() {
       document.body.style.overflow = "";
     };
   }, [mobileOpen]);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const session = await authClient.getSession();
-        setIsAuthed(Boolean(session?.data?.user?.id));
-      } catch {}
-    })();
-  }, []);
 
   const navItems = [
     { label: "Home", href: "/" },
@@ -93,24 +82,14 @@ export default function Navbar() {
 
           {/* Right actions (desktop) */}
           <div className="hidden md:flex items-center gap-4">
-            {isAuthed ? (
-              <Link href="/dashboard">
-                <button className="ml-2 px-5 py-2 rounded-full text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 shadow-sm ring-1 ring-indigo-300 hover:shadow hover:opacity-95 transition-all">
-                  Go to Dashboard
-                </button>
-              </Link>
-            ) : (
-              <>
-                <Link href="/login" className="text-sm hover:underline">
-                  Sign in
-                </Link>
-                <Link href="/signup">
-                  <button className="ml-2 bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-semibold hover:opacity-95 transition-all">
-                    Get started
-                  </button>
-                </Link>
-              </>
-            )}
+            <Link href="/login" className="text-sm hover:underline">
+              Sign in
+            </Link>
+            <Link href="/signup">
+              <button className="ml-2 bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-semibold hover:opacity-95 transition-all">
+                Get started
+              </button>
+            </Link>
           </div>
 
           {/* Mobile hamburger */}
@@ -209,35 +188,22 @@ export default function Navbar() {
             </ul>
 
             <div className="mt-6 flex flex-col gap-3">
-              {isAuthed ? (
-                <Link href="/dashboard">
-                  <button
-                    onClick={() => setMobileOpen(false)}
-                    className="w-full px-4 py-2 rounded-full text-white bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 ring-1 ring-indigo-300"
-                  >
-                    Go to Dashboard
-                  </button>
-                </Link>
-              ) : (
-                <>
-                  <Link href="/login">
-                    <button
-                      onClick={() => setMobileOpen(false)}
-                      className="w-full text-center px-4 py-2 rounded-full border border-gray-200"
-                    >
-                      Sign in
-                    </button>
-                  </Link>
-                  <Link href="/signup">
-                    <button
-                      onClick={() => setMobileOpen(false)}
-                      className="w-full px-4 py-2 rounded-full text-white bg-indigo-600"
-                    >
-                      Get started
-                    </button>
-                  </Link>
-                </>
-              )}
+              <Link href="/login">
+                <button
+                  onClick={() => setMobileOpen(false)}
+                  className="w-full text-center px-4 py-2 rounded-full border border-gray-200"
+                >
+                  Sign in
+                </button>
+              </Link>
+              <Link href="/signup">
+                <button
+                  onClick={() => setMobileOpen(false)}
+                  className="w-full px-4 py-2 rounded-full text-white bg-indigo-600"
+                >
+                  Get started
+                </button>
+              </Link>
             </div>
           </nav>
         </div>

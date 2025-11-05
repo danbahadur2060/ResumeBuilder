@@ -4,12 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { authClient } from "../../lib/auth-client";
 import React, { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { redirect, usePathname } from "next/navigation";
 import {LogOutIcon } from "lucide-react";
 
 
 export default  function Navbar() {
-  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [username , setUsername] = useState('......');
   
@@ -17,11 +16,11 @@ export default  function Navbar() {
 
   const fetchUser  = async () =>{
     const user = await authClient.getSession();
-    setUsername(user?.data?.user?.name || 'User');
+    setUsername(user.data.user.name);
   }
   const logoutHandler = async() =>{
     await authClient.signOut();
-    router.push('/');
+    redirect('/');
   }
 
   useEffect(()=>{

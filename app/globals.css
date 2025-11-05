@@ -2,7 +2,7 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #0f172a; /* slate-900 */
+  --foreground: #171717;
 }
 
 @theme inline {
@@ -10,6 +10,13 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #ffffff;
+    --foreground: #000000;
+  }
 }
 
 body {

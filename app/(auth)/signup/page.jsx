@@ -118,10 +118,11 @@ export default function SignUp() {
         return;
       }
 
-      if (data?.url) {
-        window.location.href = data.url;
+      if (data) {
+        setMessage({ type: "success", text: "Sign-in successful — redirecting..." });
+        setTimeout(() => router.push("/dashboard"), 900);
       } else {
-        router.push("/dashboard");
+        setMessage({ type: "error", text: "Google sign-in returned no data." });
       }
     } catch (err) {
       console.error("Google sign-in error:", err);

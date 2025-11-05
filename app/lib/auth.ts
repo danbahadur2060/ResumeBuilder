@@ -1,29 +1,36 @@
 import { betterAuth } from "better-auth";
-import { MongoClient, Db } from "mongodb";
+import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 
 let client: MongoClient | null = null;
-let db: Db | null = null;
+let db: any = null;
 
-function getDatabase() {
-  const uri = process.env.MONGODB_URI;
-  if (!uri) {
+async function getDatabase() {
+  if (!process.env.MONGODB_URI) {
     throw new Error("MONGODB_URI is not defined");
   }
+  
   if (!client) {
-    // Lazily create the client; the driver will connect on first operation.
-    client = new MongoClient(uri);
-  }
-  if (!db) {
+    client = new MongoClient(process.env.MONGODB_URI);
+    await client.connect();
     db = client.db(process.env.MONGODB_DBNAME || "aiResumebuilder");
   }
-  return { client, db } as { client: MongoClient; db: Db };
+  return { client, db };
 }
 
+// Create a function that returns the auth instance
 function createAuth() {
-  const { client, db } = getDatabase();
   return betterAuth({
-    database: mongodbAdapter(db, { client }),
+    database: mongodbAdapter(
+      new Promise(async (resolve) => {
+        const { db } = await getDatabase();
+        resolve(db);
+      }) as any,
+      { client: new Promise(async (resolve) => {
+        const { client } = await getDatabase();
+        resolve(client);
+      }) as any }
+    ),
     emailAndPassword: { enabled: true },
     socialProviders: {
       google: {
@@ -36,6 +43,7 @@ function createAuth() {
   });
 }
 
+// Export a lazy-loaded auth instance
 let authInstance: any = null;
 
 export const auth = {
@@ -50,5 +58,5 @@ export const auth = {
       authInstance = createAuth();
     }
     return authInstance.handler;
-  },
+  }
 };

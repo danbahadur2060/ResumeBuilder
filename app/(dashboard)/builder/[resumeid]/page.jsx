@@ -1,6 +1,6 @@
 "use client";
 import { useParams } from "next/navigation";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { dummyResumeData } from "../../../assets/assets";
 import PersonalInfoForm from "../../_components/PersonalInfoForm";
 import TemplateSelector from "../../_components/TemplateSelector";
@@ -27,7 +27,6 @@ import {
   User,
 } from "lucide-react";
 import ResumePreview from "../../_components/ResumePreview";
-import axios from "axios";
 
 const Page = () => {
   const { resumeid } = useParams();
@@ -40,18 +39,18 @@ const Page = () => {
     education: [],
     project:[],
     skills: [],
-    template: "classic",
+    templates: "classic",
     accent_color: "#3B82F6",
     public: false,
   });
 
   const loadExistingResume = async (id) => {
     try {
-      const { data } = await axios.get(`/api/resume/${id}`);
-      const resume = data?.data;
+      const resume = dummyResumeData.find((res) => res._id === id);
+      
       if (resume) {
         setResumeData(resume);
-        if (resume?.title) document.title = resume.title;
+        document.title = resume.title;
       }
     } catch (error) {
       console.log(error);
@@ -79,18 +78,7 @@ const Page = () => {
   }, [resumeid]);
 
   const changeResumeVisibility = async()=>{
-    try {
-      const nextPublic = !resumeData.public
-      const payload = { ...resumeData, public: nextPublic }
-      // Remove possible File object before serializing
-      const dataCopy = JSON.parse(JSON.stringify(payload))
-      const form = new FormData()
-      form.append('resumeData', JSON.stringify(dataCopy))
-      await axios.put(`/api/resume/${resumeid}`, form)
-      setResumeData((prev)=> ({...prev, public: nextPublic}))
-    } catch (e){
-      console.error('toggle public failed', e)
-    }
+    setResumeData({...resumeData , public: !resumeData.public})
   }
   const handleShare= ()=>{
     const frontendUrl = window.location.href.split("/builder/")[0];
@@ -181,11 +169,11 @@ const Page = () => {
               <div className="flex items-center mb-6 justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <TemplateSelector
-                    selectedTemplate={resumeData.template}
+                    selectedTemplate={resumeData.templates}
                     onChange={(template) =>
                       setResumeData((prev) => ({
                         ...prev,
-                        template,
+                        templates: template,
                       }))
                     }
                   />
@@ -269,26 +257,7 @@ const Page = () => {
                
                
               </div>
-              <button onClick={async ()=>{
-                try{
-                  const isFile = resumeData?.personal_info?.image && (resumeData.personal_info.image instanceof File || (typeof resumeData.personal_info.image === 'object' && resumeData.personal_info.image?.name))
-                  const form = new FormData()
-                  if (isFile) {
-                    form.append('image', resumeData.personal_info.image)
-                  }
-                  const copy = JSON.parse(JSON.stringify(resumeData))
-                  if (isFile) {
-                    // remove image field from JSON copy so server sets from upload
-                    if (copy.personal_info) delete copy.personal_info.image
-                  }
-                  form.append('resumeData', JSON.stringify(copy))
-                  form.append('removeBackground', String(!!removeBackground))
-                  const { data } = await axios.put(`/api/resume/${resumeid}`, form)
-                  if (data?.data) setResumeData(data.data)
-                }catch(e){
-                  console.error('save failed', e)
-                }
-              }} className="bg-gradient-to-br from-green-50 to-green-100 ring-green-400 text-green-600 ring hover:ring-green-400 transition-all rounded-md px-6 py-2 mt-6 text-sm cursor-pointer">Save Changes</button>
+              <button className="bg-gradient-to-br from-green-50 to-green-100 ring-green-400 text-green-600 ring hover:ring-green-400 transition-all rounded-md px-6 py-2 mt-6 text-sm cursor-pointer">Save Changes</button>
             </div>
           </div>
 
@@ -316,7 +285,7 @@ const Page = () => {
             {/* resume preview */}
             <ResumePreview
               data={resumeData}
-              template={resumeData.template}
+              template={resumeData.templates}
               accentColor={resumeData.accent_color}
             />
           </div>

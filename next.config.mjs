@@ -1,7 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ['mongoose'],
+  experimental: {
+    serverComponentsExternalPackages: ['mongoose']
+  },
   images: {
+    domains: ['ik.imagekit.io', 'lh3.googleusercontent.com'],
     remotePatterns: [
       {
         protocol: 'https',
