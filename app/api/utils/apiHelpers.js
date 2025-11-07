@@ -72,7 +72,7 @@ export function notFoundError(resource = "Resource") {
 export async function withAuth(handler) {
   return async (req, context) => {
     try {
-      const { auth } = await import("../../lib/auth.ts");
+      const { auth } = await import("@/app/lib/auth");
       const { headers: getHeaders } = await import("next/headers");
 
       const session = await auth.api.getSession({

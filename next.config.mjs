@@ -2,7 +2,6 @@
 const nextConfig = {
   serverExternalPackages: ['mongoose'],
   images: {
-    domains: ['ik.imagekit.io', 'lh3.googleusercontent.com'],
     remotePatterns: [
       {
         protocol: 'https',

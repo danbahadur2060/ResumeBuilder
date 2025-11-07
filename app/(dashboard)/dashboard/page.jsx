@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CloudUploadIcon, PlusIcon, Edit3, Trash2, XIcon } from "lucide-react";
 import { dummyResumeData } from "../../assets/assets";
+import axios from "axios";
 
 const Page = () => {
   const router = useRouter();
@@ -17,17 +18,31 @@ const Page = () => {
 
   const fetchResumes = async () => {
     try {
-      setAllResumes(dummyResumeData || []);
+      const response = await axios.get("/api/getuserresume");
+      setAllResumes(response.data.data || []);
     } catch (error) {
       console.error("Error fetching resumes:", error);
+      // Fallback to dummy data if API fails
+      setAllResumes(dummyResumeData || []);
     }
   };
 
   const createResume = async (e) => {
-    e.preventDefault();
-    setShowCreateResume(false);
-    // If you want to pass title somewhere, you can add query params or handle creation before redirect
-    router.push("/builder/resume123");
+    try {
+      e.preventDefault();
+      setLoading(true);
+      const { data } = await axios.post("/api/resume", { title });
+      setShowCreateResume(false);
+      setTitle("");
+      await fetchResumes();
+      // Navigate to builder for the new resume if id exists
+      const newId = data?.data?._id || data?.data?.id || data?.data || null;
+      if (newId) router.push(`/builder/${newId}`);
+    } catch (error) {
+      console.error("Error creating resume:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -45,24 +60,24 @@ const Page = () => {
   // Form submit for editing title
   const handleEdit = async (event) => {
     event.preventDefault();
-    // Simulate edit flow: update local state
     if (!editeResumeId) return;
 
-    setLoading(true);
-    setAllResumes((prev) =>
-      prev.map((r) =>
-        r._id === editeResumeId
-          ? { ...r, title: title || "Untitled Resume" }
-          : r
-      )
-    );
-    // Clear edit modal values
-    setEditeResumeId("");
-    setTitle("");
-    setLoading(false);
+    try {
+      setLoading(true);
+      const form = new FormData();
+      form.append("resumeData", JSON.stringify({ title: title || "Untitled Resume" }));
+      await axios.put(`/api/resume/${editeResumeId}`, form);
+      await fetchResumes();
+      setEditeResumeId("");
+      setTitle("");
+    } catch (error) {
+      console.error("Error editing resume title:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDelete = (resumeObj) => {
+  const handleDelete = async (resumeObj) => {
     if (!resumeObj || !resumeObj._id) {
       console.warn("handleDelete: no id provided", resumeObj);
       return;
@@ -72,19 +87,41 @@ const Page = () => {
       "Are you sure you want to delete this resume?"
     );
     if (confirmDelete) {
-      setAllResumes((prevResumes) =>
-        prevResumes.filter((r) => r._id !== resumeObj._id)
-      );
+      try {
+        setLoading(true);
+        await axios.delete(`/api/resume/${resumeObj._id}`);
+        await fetchResumes();
+      } catch (error) {
+        console.error("Error deleting resume:", error);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
   const uploadResume = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setOpenResume(false);
-    // perform upload logic here if needed
-    setLoading(false);
-    router.push("/builder/resume123");
+    if (!resume) return;
+    try {
+      setLoading(true);
+      // Attempt to extract text client-side for .txt; otherwise fallback simple name
+      const isText = resume.type === "text/plain";
+      const resumeText = isText ? await resume.text() : `Uploaded file: ${resume.name}`;
+      const titleGuess = resume.name?.replace(/\.[^.]+$/, "") || "Imported Resume";
+      const { data } = await axios.post("/api/ai/upload-resume", {
+        resumeText,
+        title: titleGuess,
+      });
+      const newId = data?.resumeId;
+      setOpenResume(false);
+      setResume(null);
+      await fetchResumes();
+      if (newId) router.push(`/builder/${newId}`);
+    } catch (error) {
+      console.error("Error uploading resume:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -303,7 +340,7 @@ const Page = () => {
                     <input
                       type="file"
                       id="resume"
-                      accept=".pdf,.docx"
+                      accept=".txt,.pdf,.docx"
                       required
                       onChange={(e) => setResume(e.target.files[0])}
                       className="hidden"

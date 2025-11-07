@@ -1,40 +1,33 @@
 import { headers } from "next/headers";
-import { auth } from "../../lib/auth";
-import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/app/lib/auth";
+import { NextRequest } from "next/server";
 import Resume from "../../../models/Resume";
 import { connectDB } from "../../../configs/db.js";
-import { errorResponse, successResponse } from "../utils/apiHelpers";
+import {
+  errorResponse,
+  successResponse,
+  unauthorizedError,
+} from "../utils/apiHelpers";
 
-export async function POST(response: NextRequest) {
+export const runtime = "nodejs";
+
+export async function POST(request: NextRequest) {
   try {
     await connectDB();
-    const body = await response.json();
+    const body = await request.json();
     const session = await auth.api.getSession({ headers: await headers() });
 
-    const resume = await new Resume({
+    if (!session?.user?.id) {
+      return unauthorizedError("Please login to continue");
+    }
+
+    const resume = new (Resume as any)({
       ...body,
-      userId: session?.user?.id!,
+      userId: session.user.id,
     });
     await resume.save();
-    return successResponse(resume, "Resume created successfully ", 201);
+    return successResponse(resume, "Resume created successfully", 201);
   } catch (error) {
-    return errorResponse(error, "Failed to fetch user resumes", 500);
-  }
-}
-export async function PUT(
-  response: NextRequest,
-  context: { params: { id: string } }
-) {
-  try {
-    await connectDB();
-    const body = await response.json();
-    const session = await auth.api.getSession({ headers: await headers() });
-    const { id } = await context.params;
-
-    const { resumeId, resumeData, removeBackground } = body;
-
-    return successResponse(id, "Id find success", 200);
-  } catch (error) {
-    return errorResponse(error, "Failed to fetch user resumes", 500);
+    return errorResponse(error, "Failed to create resume", 500);
   }
 }

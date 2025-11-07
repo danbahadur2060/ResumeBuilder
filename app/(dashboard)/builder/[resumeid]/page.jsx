@@ -1,6 +1,6 @@
 "use client";
 import { useParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { dummyResumeData } from "../../../assets/assets";
 import PersonalInfoForm from "../../_components/PersonalInfoForm";
 import TemplateSelector from "../../_components/TemplateSelector";
@@ -27,6 +27,7 @@ import {
   User,
 } from "lucide-react";
 import ResumePreview from "../../_components/ResumePreview";
+import axios from "axios";
 
 const Page = () => {
   const { resumeid } = useParams();
@@ -39,18 +40,18 @@ const Page = () => {
     education: [],
     project:[],
     skills: [],
-    templates: "classic",
+    template: "classic",
     accent_color: "#3B82F6",
     public: false,
   });
 
   const loadExistingResume = async (id) => {
     try {
-      const resume = dummyResumeData.find((res) => res._id === id);
-      
+      const { data } = await axios.get(`/api/resume/${id}`);
+      const resume = data?.data;
       if (resume) {
         setResumeData(resume);
-        document.title = resume.title;
+        if (resume?.title) document.title = resume.title;
       }
     } catch (error) {
       console.log(error);
@@ -59,6 +60,27 @@ const Page = () => {
 
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
   const [removeBackground, setRemoveBackground] = useState(false);
+
+  const isFileLike = (value) => value && (value instanceof File || (typeof value === 'object' && typeof value.name === 'string'))
+
+  const saveResume = async (dataOverride) => {
+    try {
+      const payload = dataOverride || resumeData
+      const isFile = payload?.personal_info?.image && isFileLike(payload.personal_info.image)
+      const form = new FormData()
+      if (isFile) {
+        form.append('image', payload.personal_info.image)
+      }
+      const copy = JSON.parse(JSON.stringify(payload))
+      if (isFile && copy.personal_info) delete copy.personal_info.image
+      form.append('resumeData', JSON.stringify(copy))
+      form.append('removeBackground', String(!!removeBackground))
+      const { data } = await axios.put(`/api/resume/${resumeid}`, form)
+      if (data?.data) setResumeData(data.data)
+    } catch (e) {
+      console.error('save failed', e)
+    }
+  }
 
   const sections = [
     { id: "personal", name: "Personal Info", icon: User },
@@ -78,7 +100,18 @@ const Page = () => {
   }, [resumeid]);
 
   const changeResumeVisibility = async()=>{
-    setResumeData({...resumeData , public: !resumeData.public})
+    try {
+      const nextPublic = !resumeData.public
+      const payload = { ...resumeData, public: nextPublic }
+      // Remove possible File object before serializing
+      const dataCopy = JSON.parse(JSON.stringify(payload))
+      const form = new FormData()
+      form.append('resumeData', JSON.stringify(dataCopy))
+      await axios.put(`/api/resume/${resumeid}`, form)
+      setResumeData((prev)=> ({...prev, public: nextPublic}))
+    } catch (e){
+      console.error('toggle public failed', e)
+    }
   }
   const handleShare= ()=>{
     const frontendUrl = window.location.href.split("/builder/")[0];
@@ -169,11 +202,11 @@ const Page = () => {
               <div className="flex items-center mb-6 justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <TemplateSelector
-                    selectedTemplate={resumeData.templates}
+                    selectedTemplate={resumeData.template}
                     onChange={(template) =>
                       setResumeData((prev) => ({
                         ...prev,
-                        templates: template,
+                        template,
                       }))
                     }
                   />
@@ -230,7 +263,15 @@ const Page = () => {
 
                 {
                   activeSection.id === 'summary' && (
-                    <ProfessionalSummaryForm data={resumeData.professional_summary} onChange={(data)=>setResumeData(prev =>({...prev,professional_summary:data}))} setResumeData={setResumeData} />
+                    <ProfessionalSummaryForm
+                      data={resumeData.professional_summary}
+                      onChange={(data)=>setResumeData(prev =>({...prev,professional_summary:data}))}
+                      setResumeData={setResumeData}
+                      onEnhanced={async (newText)=>{
+                        // persist immediately after AI enhancement
+                        await saveResume({ ...resumeData, professional_summary: newText })
+                      }}
+                    />
                   )
                 }
 
@@ -257,7 +298,9 @@ const Page = () => {
                
                
               </div>
-              <button className="bg-gradient-to-br from-green-50 to-green-100 ring-green-400 text-green-600 ring hover:ring-green-400 transition-all rounded-md px-6 py-2 mt-6 text-sm cursor-pointer">Save Changes</button>
+              <button onClick={async ()=>{
+                await saveResume()
+              }} className="bg-gradient-to-br from-green-50 to-green-100 ring-green-400 text-green-600 ring hover:ring-green-400 transition-all rounded-md px-6 py-2 mt-6 text-sm cursor-pointer">Save Changes</button>
             </div>
           </div>
 
@@ -285,7 +328,7 @@ const Page = () => {
             {/* resume preview */}
             <ResumePreview
               data={resumeData}
-              template={resumeData.templates}
+              template={resumeData.template}
               accentColor={resumeData.accent_color}
             />
           </div>
