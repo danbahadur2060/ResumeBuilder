@@ -2,7 +2,7 @@ import { Sparkles } from 'lucide-react'
 import React, { useState } from 'react'
 import axios from 'axios'
 
-const ProfessionalSummaryForm = ({data,onChange,setResumeData}) => {
+const ProfessionalSummaryForm = ({data,onChange,setResumeData,onEnhanced}) => {
   const [enhancing, setEnhancing] = useState(false)
 
   const enhanceWithAI = async () => {
@@ -11,7 +11,13 @@ const ProfessionalSummaryForm = ({data,onChange,setResumeData}) => {
       setEnhancing(true)
       const res = await axios.post('/api/ai/enhance-pro-sum', { userContext: data })
       const improved = res?.data?.enhanceContent || ''
-      if (improved) onChange(improved)
+      if (improved) {
+        onChange(improved)
+        // Notify parent so it can persist immediately
+        if (typeof onEnhanced === 'function') {
+          try { await onEnhanced(improved) } catch {}
+        }
+      }
     } catch (e) {
       console.error('enhance-pro-sum failed', e)
     } finally {

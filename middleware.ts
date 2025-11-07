@@ -55,6 +55,5 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/builder/:path*",
-    "/view/:path*",
   ],
 };

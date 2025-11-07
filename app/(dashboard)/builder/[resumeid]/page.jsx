@@ -61,6 +61,27 @@ const Page = () => {
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
   const [removeBackground, setRemoveBackground] = useState(false);
 
+  const isFileLike = (value) => value && (value instanceof File || (typeof value === 'object' && typeof value.name === 'string'))
+
+  const saveResume = async (dataOverride) => {
+    try {
+      const payload = dataOverride || resumeData
+      const isFile = payload?.personal_info?.image && isFileLike(payload.personal_info.image)
+      const form = new FormData()
+      if (isFile) {
+        form.append('image', payload.personal_info.image)
+      }
+      const copy = JSON.parse(JSON.stringify(payload))
+      if (isFile && copy.personal_info) delete copy.personal_info.image
+      form.append('resumeData', JSON.stringify(copy))
+      form.append('removeBackground', String(!!removeBackground))
+      const { data } = await axios.put(`/api/resume/${resumeid}`, form)
+      if (data?.data) setResumeData(data.data)
+    } catch (e) {
+      console.error('save failed', e)
+    }
+  }
+
   const sections = [
     { id: "personal", name: "Personal Info", icon: User },
     { id: "summary", name: "Professional Summary", icon: FileText },
@@ -242,7 +263,15 @@ const Page = () => {
 
                 {
                   activeSection.id === 'summary' && (
-                    <ProfessionalSummaryForm data={resumeData.professional_summary} onChange={(data)=>setResumeData(prev =>({...prev,professional_summary:data}))} setResumeData={setResumeData} />
+                    <ProfessionalSummaryForm
+                      data={resumeData.professional_summary}
+                      onChange={(data)=>setResumeData(prev =>({...prev,professional_summary:data}))}
+                      setResumeData={setResumeData}
+                      onEnhanced={async (newText)=>{
+                        // persist immediately after AI enhancement
+                        await saveResume({ ...resumeData, professional_summary: newText })
+                      }}
+                    />
                   )
                 }
 
@@ -270,24 +299,7 @@ const Page = () => {
                
               </div>
               <button onClick={async ()=>{
-                try{
-                  const isFile = resumeData?.personal_info?.image && (resumeData.personal_info.image instanceof File || (typeof resumeData.personal_info.image === 'object' && resumeData.personal_info.image?.name))
-                  const form = new FormData()
-                  if (isFile) {
-                    form.append('image', resumeData.personal_info.image)
-                  }
-                  const copy = JSON.parse(JSON.stringify(resumeData))
-                  if (isFile) {
-                    // remove image field from JSON copy so server sets from upload
-                    if (copy.personal_info) delete copy.personal_info.image
-                  }
-                  form.append('resumeData', JSON.stringify(copy))
-                  form.append('removeBackground', String(!!removeBackground))
-                  const { data } = await axios.put(`/api/resume/${resumeid}`, form)
-                  if (data?.data) setResumeData(data.data)
-                }catch(e){
-                  console.error('save failed', e)
-                }
+                await saveResume()
               }} className="bg-gradient-to-br from-green-50 to-green-100 ring-green-400 text-green-600 ring hover:ring-green-400 transition-all rounded-md px-6 py-2 mt-6 text-sm cursor-pointer">Save Changes</button>
             </div>
           </div>
